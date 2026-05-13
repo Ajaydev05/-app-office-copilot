@@ -1,0 +1,49 @@
+# Copilot manifest for MongoDB service
+# Uses official MongoDB Docker image — no custom Dockerfile needed
+# Deploy with: copilot svc deploy --name mongodb --env production
+
+name: mongodb
+type: Backend Service   # Internal only — not exposed publicly
+
+image:
+  location: mongo:7.0   # Official MongoDB image from Docker Hub
+
+  # Mount a volume so data persists across task restarts
+  # (ECS Fargate managed volume — survives container restarts within the same task)
+
+http:
+  healthcheck:
+    command: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    startPeriod: 40s
+
+port: 27017
+
+cpu: 512
+memory: 1024
+count: 1
+
+storage:
+  volumes:
+    mongodata:
+      path: /data/db
+      read_only: false
+      efs:
+        managed: true     # Copilot creates and manages the EFS volume automatically
+
+variables:
+  MONGO_INITDB_DATABASE: quickbite
+
+secrets:
+  # Store these in AWS SSM before deploying:
+  #   aws ssm put-parameter --name /copilot/quickbite/production/secrets/MONGO_INITDB_ROOT_USERNAME --value "quickbite_user" --type SecureString
+  #   aws ssm put-parameter --name /copilot/quickbite/production/secrets/MONGO_INITDB_ROOT_PASSWORD --value "strongpassword"  --type SecureString
+  MONGO_INITDB_ROOT_USERNAME: /copilot/quickbite/production/secrets/MONGO_INITDB_ROOT_USERNAME
+  MONGO_INITDB_ROOT_PASSWORD: /copilot/quickbite/production/secrets/MONGO_INITDB_ROOT_PASSWORD
+
+environments:
+  production:
+    cpu: 1024
+    memory: 2048

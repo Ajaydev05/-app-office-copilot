@@ -1,0 +1,33 @@
+# Copilot manifest — Frontend
+# Image is built manually on EC2 and pushed to ECR by you (or Jenkins).
+# Copilot only tells ECS which image to pull from ECR — it does NOT rebuild.
+
+name: frontend
+type: Load Balanced Web Service   # Public-facing, sits behind ALB — Copilot creates ALB and gives DNS name
+
+image:
+  # ⚠️  Replace 123456789012 with your AWS Account ID
+  # ⚠️  Replace ap-south-1 with your AWS region
+  location: 123456789012.dkr.ecr.ap-south-1.amazonaws.com/quickbite-frontend:latest
+  port: 80
+
+http:
+  path: '/'
+  healthcheck:
+    path: '/health'
+    interval: 30s
+    timeout: 5s
+    retries: 3
+
+cpu: 256
+memory: 512
+count: 1
+
+variables:
+  NODE_ENV: production
+
+environments:
+  production:
+    count: 2
+    cpu: 512
+    memory: 1024

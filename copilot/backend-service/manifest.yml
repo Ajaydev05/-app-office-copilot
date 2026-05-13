@@ -1,0 +1,45 @@
+# Copilot manifest — Backend Service
+# Image is built manually on EC2 and pushed to ECR by you (or Jenkins).
+# Copilot only tells ECS which image to pull from ECR — it does NOT rebuild.
+
+name: backend-service
+type: Backend Service   # Internal only — NOT exposed publicly, only reachable inside VPC
+
+image:
+  # ⚠️  Replace 123456789012 with your AWS Account ID
+  # ⚠️  Replace ap-south-1 with your AWS region
+  location: 123456789012.dkr.ecr.ap-south-1.amazonaws.com/quickbite-backend:latest
+  port: 5000
+
+http:
+  healthcheck:
+    path: '/health'
+    port: 5000
+    interval: 30s
+    timeout: 5s
+    retries: 3
+
+cpu: 256
+memory: 512
+count: 1
+
+variables:
+  NODE_ENV:       production
+  PORT:           5000
+  JWT_EXPIRES_IN: 7d
+  # Copilot Service Discovery — mongodb container is reachable inside VPC at this DNS
+  MONGO_HOST:     mongodb.production.quickbite.local
+  MONGO_PORT:     27017
+  MONGO_DB:       quickbite
+
+secrets:
+  # These are pulled from AWS SSM Parameter Store at runtime by ECS
+  MONGO_USERNAME: /copilot/quickbite/production/secrets/MONGO_USERNAME
+  MONGO_PASSWORD: /copilot/quickbite/production/secrets/MONGO_PASSWORD
+  JWT_SECRET:     /copilot/quickbite/production/secrets/JWT_SECRET
+
+environments:
+  production:
+    count: 2
+    cpu: 512
+    memory: 1024

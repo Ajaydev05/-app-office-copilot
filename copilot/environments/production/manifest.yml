@@ -1,0 +1,5 @@
+# Copilot environment manifest
+# Created by: copilot env init --name production
+
+name: production
+type: Environment
